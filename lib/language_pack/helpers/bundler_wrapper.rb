@@ -35,10 +35,7 @@ require 'language_pack/fetcher'
 class LanguagePack::Helpers::BundlerWrapper
   include LanguagePack::ShellHelpers
 
-  BLESSED_BUNDLER_VERSIONS = {}
-  BLESSED_BUNDLER_VERSIONS["1"] = "1.17.3"
-  BLESSED_BUNDLER_VERSIONS["2"] = "2.2.21"
-  BUNDLED_WITH_REGEX = /^BUNDLED WITH$(\r?\n)   (?<major>\d+)\.\d+\.\d+/m
+  BUNDLED_WITH_REGEX = /^BUNDLED WITH$(\r?\n)   (?<full>\d+\.\d+\.\d+)/m
   SPEC_REGEX = /^    (\S+) \(([^-)]+)(?:-(?:[^)]))?\)\n/
   PLATFORMS_REGEX = /^PLATFORMS$(\r?\n)(?<platforms>.*)DEPENDENCIES/m
 
@@ -46,24 +43,6 @@ class LanguagePack::Helpers::BundlerWrapper
     def initialize(error)
       msg = String.new("There was an error parsing your Gemfile, we cannot continue\n")
       msg << error
-      super msg
-    end
-  end
-
-  class UnsupportedBundlerVersion < BuildpackError
-    def initialize(version_hash, major)
-      msg = String.new("Your Gemfile.lock indicates you need bundler `#{major}.x`\n")
-      msg << "which is not currently supported. You can deploy with bundler version:\n"
-      version_hash.keys.each do |v|
-        msg << "  - `#{v}.x`\n"
-      end
-      msg << "\nTo use another version of bundler, update your `Gemfile.lock` to point\n"
-      msg << "to a supported version. For example:\n"
-      msg << "\n"
-      msg << "```\n"
-      msg << "BUNDLED WITH\n"
-      msg << "   #{version_hash["1"]}\n"
-      msg << "```\n"
       super msg
     end
   end
@@ -78,7 +57,6 @@ class LanguagePack::Helpers::BundlerWrapper
     detect_bundler_version_and_dir_name!
 
     @bundler_path         = options[:bundler_path] || @bundler_tmp.join(dir_name)
-    @bundler_tar          = options[:bundler_tar]  || "bundler/#{dir_name}.tgz"
     @orig_bundle_gemfile  = ENV['BUNDLE_GEMFILE']
     @path                 = Pathname.new("#{@bundler_path}/gems/#{dir_name}/lib")
   end
@@ -166,21 +144,12 @@ class LanguagePack::Helpers::BundlerWrapper
     Gem::Version.new(@version) < Gem::Version.new("2.1.4")
   end
 
-  def bundler_version_escape_valve!
-    topic("Removing BUNDLED WITH version in the Gemfile.lock")
-    contents = File.read(@gemfile_lock_path, mode: "rt")
-    File.open(@gemfile_lock_path, "w") do |f|
-      f.write contents.sub(/^BUNDLED WITH$(\r?\n)   (?<major>\d+)\.\d+\.\d+/m, '')
-    end
-  end
-
   private
   def fetch_bundler
     instrument 'fetch_bundler' do
       return true if Dir.exists?(bundler_path)
 
       topic("Installing bundler #{@version}")
-      bundler_version_escape_valve!
 
       # Install directory structure (as of Bundler 2.1.4):
       # - cache
@@ -192,7 +161,7 @@ class LanguagePack::Helpers::BundlerWrapper
       # - doc
       FileUtils.mkdir_p(bundler_path)
       Dir.chdir(bundler_path) do
-        @fetcher.fetch_untar(@bundler_tar)
+        run!("gem install bundler -v #{@version} --install-dir .")
       end
       Dir["bin/*"].each {|path| `chmod 755 #{path}` }
     end
@@ -202,14 +171,14 @@ class LanguagePack::Helpers::BundlerWrapper
     @gemfile_lock_path.read(mode: "rt")
   end
 
-  def major_bundler_version
+  def bundler_version
     # https://rubular.com/r/jt9yj0aY7fU3hD
     bundler_version_match = gemfile_lock_contents.match(BUNDLED_WITH_REGEX)
 
     if bundler_version_match
-      bundler_version_match[:major]
+      bundler_version_match[:full]
     else
-      "1"
+      "1.17.3"
     end
   end
 
@@ -217,12 +186,7 @@ class LanguagePack::Helpers::BundlerWrapper
   # version. The solution here is to read in the value set in the Gemfile.lock
   # and download the "blessed" version with the same major version.
   def detect_bundler_version_and_dir_name!
-    major = major_bundler_version
-    if BLESSED_BUNDLER_VERSIONS.key?(major)
-      @version = BLESSED_BUNDLER_VERSIONS[major]
-    else
-      raise UnsupportedBundlerVersion.new(BLESSED_BUNDLER_VERSIONS, major)
-    end
+    @version = bundler_version
   end
 
 end
