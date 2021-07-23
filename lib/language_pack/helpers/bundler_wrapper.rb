@@ -39,6 +39,8 @@ class LanguagePack::Helpers::BundlerWrapper
   BLESSED_BUNDLER_VERSIONS["1"] = "1.17.3"
   BLESSED_BUNDLER_VERSIONS["2"] = "2.2.21"
   BUNDLED_WITH_REGEX = /^BUNDLED WITH$(\r?\n)   (?<major>\d+)\.\d+\.\d+/m
+  SPEC_REGEX = /^    (\S+) \(([^-)]+)(?:-(?:[^)]))?\)\n/
+  PLATFORMS_REGEX = /^PLATFORMS$(\r?\n)(?<platforms>.*)DEPENDENCIES/m
 
   class GemfileParseError < BuildpackError
     def initialize(error)
@@ -101,8 +103,8 @@ class LanguagePack::Helpers::BundlerWrapper
 
   def gem_version(name)
     instrument "ruby.gem_version" do
-      if spec = specs[name]
-        spec.version
+      if version = specs[name]
+        version
       end
     end
   end
@@ -116,11 +118,11 @@ class LanguagePack::Helpers::BundlerWrapper
   end
 
   def specs
-    @specs ||= lockfile_parser.specs.each_with_object({}) {|spec, hash| hash[spec.name] = spec }
+    @specs ||= gemfile_lock_contents.scan(SPEC_REGEX).each_with_object({}) {|data, hash| hash[data.first] = Gem::Version.new(data.last) }
   end
 
   def platforms
-    @platforms ||= lockfile_parser.platforms
+    @platforms ||= gemfile_lock_contents.match(PLATFORMS_REGEX)[:platforms].split("\n").map(&:strip)
   end
 
   def version
@@ -155,10 +157,6 @@ class LanguagePack::Helpers::BundlerWrapper
         output.strip.sub('(', '').sub(')', '').sub(/(p-?\d+)/, ' \1').split.join('-')
       end
     end
-  end
-
-  def lockfile_parser
-    @lockfile_parser ||= parse_gemfile_lock
   end
 
   # Some bundler versions have different behavior
@@ -200,16 +198,13 @@ class LanguagePack::Helpers::BundlerWrapper
     end
   end
 
-  def parse_gemfile_lock
-    instrument 'parse_bundle' do
-      gemfile_contents = File.read(@gemfile_lock_path)
-      Bundler::LockfileParser.new(gemfile_contents)
-    end
+  def gemfile_lock_contents
+    @gemfile_lock_path.read(mode: "rt")
   end
 
   def major_bundler_version
     # https://rubular.com/r/jt9yj0aY7fU3hD
-    bundler_version_match = @gemfile_lock_path.read(mode: "rt").match(BUNDLED_WITH_REGEX)
+    bundler_version_match = gemfile_lock_contents.match(BUNDLED_WITH_REGEX)
 
     if bundler_version_match
       bundler_version_match[:major]
