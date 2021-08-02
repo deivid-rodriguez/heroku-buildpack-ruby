@@ -815,14 +815,7 @@ BUNDLE
         topic("Setup target bundler's binstub to point to installed ruby")
         run("gem pristine bundler --only-executables")
 
-        full_ruby_version       = run_stdout(%q(ruby -v)).strip
-        topic("Installing dependencies using bundler #{bundler.version} and #{full_ruby_version}")
-
-        topic("PATH:: #{ENV['PATH']}")
-
-        bundle_path       = run_stdout(%q(which bundle)).strip
-        topic("Path to bundler: #{bundle_path}")
-        topic("Contents: #{File.read(bundle_path)}")
+        topic("Installing dependencies using bundler #{bundler.version}")
 
         bundler_output = String.new("")
         bundle_time    = nil
