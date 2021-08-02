@@ -813,8 +813,12 @@ BUNDLE
         bundle_command << "bundle install -j4"
 
         full_ruby_version       = run_stdout(%q(ruby -v)).strip
-        topic("Installing dependencies using bundler #{bundler.version} and ruby #{full_ruby_version}")
-        topic("ENV['PATH']: #{ENV['PATH']}")
+        topic("Installing dependencies using bundler #{bundler.version} and #{full_ruby_version}")
+
+        topic("PATH:: #{ENV['PATH']}")
+
+        bundle_path       = run_stdout(%q(which bundle)).strip
+        topic("Path to bundler: #{bundle_path}")
 
         bundler_output = String.new("")
         bundle_time    = nil
