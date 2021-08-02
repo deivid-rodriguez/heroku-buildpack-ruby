@@ -819,6 +819,7 @@ BUNDLE
 
         bundle_path       = run_stdout(%q(which bundle)).strip
         topic("Path to bundler: #{bundle_path}")
+        topic("Contents: #{File.read(bundle_path)}")
 
         bundler_output = String.new("")
         bundle_time    = nil
