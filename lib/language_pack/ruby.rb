@@ -347,7 +347,6 @@ EOF
         warn("Your BUNDLE_WITHOUT contains a space, we are converting it to a colon `:` BUNDLE_WITHOUT=#{ENV["BUNDLE_WITHOUT"]}", inline: true)
       end
       ENV["BUNDLE_PATH"] = bundle_path
-      ENV["BUNDLE_BIN"] = bundler_binstubs_path
       ENV["BUNDLE_DEPLOYMENT"] = "1"
       ENV["BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE"] = "1" if bundler.needs_ruby_global_append_path?
     end
@@ -383,7 +382,6 @@ EOF
 
       set_export_default "BUNDLE_PATH", ENV["BUNDLE_PATH"], layer
       set_export_default "BUNDLE_WITHOUT", ENV["BUNDLE_WITHOUT"], layer
-      set_export_default "BUNDLE_BIN", ENV["BUNDLE_BIN"], layer
       set_export_default "BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE", ENV["BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE"], layer if bundler.needs_ruby_global_append_path?
       set_export_default "BUNDLE_DEPLOYMENT", ENV["BUNDLE_DEPLOYMENT"], layer if ENV["BUNDLE_DEPLOYMENT"] # Unset on windows since we delete the Gemfile.lock
     end
@@ -421,7 +419,6 @@ EOF
 
       set_env_default "BUNDLE_PATH", ENV["BUNDLE_PATH"]
       set_env_default "BUNDLE_WITHOUT", ENV["BUNDLE_WITHOUT"]
-      set_env_default "BUNDLE_BIN", ENV["BUNDLE_BIN"]
       set_env_default "BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE", ENV["BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE"] if bundler.needs_ruby_global_append_path?
       set_env_default "BUNDLE_DEPLOYMENT", ENV["BUNDLE_DEPLOYMENT"] if ENV["BUNDLE_DEPLOYMENT"] # Unset on windows since we delete the Gemfile.lock
     end
@@ -815,7 +812,9 @@ BUNDLE
         bundle_command << "BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE=#{ENV["BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE"]} " if bundler.needs_ruby_global_append_path?
         bundle_command << "bundle install -j4"
 
-        topic("Installing dependencies using bundler #{bundler.version}")
+        full_ruby_version       = run_stdout(%q(ruby -v)).strip
+        topic("Installing dependencies using bundler #{bundler.version} and ruby #{full_ruby_version}")
+        topic("ENV['PATH']: #{ENV['PATH']}")
 
         bundler_output = String.new("")
         bundle_time    = nil
