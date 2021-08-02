@@ -49,9 +49,9 @@ class LanguagePack::Helpers::RakeRunner
         cmd = "rake #{task}"
 
         if quiet_option
-          self.output = run("rake #{task}", options)
+          self.output = run("bundle exec rake #{task}", options)
         else
-          self.output = pipe("rake #{task}", options)
+          self.output = pipe("bundle exec rake #{task}", options)
         end
       end
       self.time = time
