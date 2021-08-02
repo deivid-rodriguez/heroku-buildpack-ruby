@@ -812,6 +812,9 @@ BUNDLE
         bundle_command << "BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE=#{ENV["BUNDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE"]} " if bundler.needs_ruby_global_append_path?
         bundle_command << "bundle install -j4"
 
+        topic("Setup target bundler's binstub to point to installed ruby")
+        run("gem pristine bundler --only-executables")
+
         full_ruby_version       = run_stdout(%q(ruby -v)).strip
         topic("Installing dependencies using bundler #{bundler.version} and #{full_ruby_version}")
 
