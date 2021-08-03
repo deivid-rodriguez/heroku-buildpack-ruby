@@ -25,6 +25,8 @@ module LanguagePack::Installers::RubyInstaller
   end
 
   def setup_binstubs(install_dir)
+    puts "Installing binstubs to #{install_dir}"
+
     FileUtils.mkdir_p DEFAULT_BIN_DIR
     run("ln -s ruby #{install_dir}/bin/ruby.exe")
 
@@ -42,6 +44,8 @@ module LanguagePack::Installers::RubyInstaller
       #
       # Discussion: https://github.com/heroku/heroku-buildpack-ruby/issues/1025#issuecomment-653102430
       next if vendor_bin.include?("rake")
+
+      puts "Symlinkig #{vendor_bin}"
 
       if install_pathname.absolute?
         run("ln -s #{vendor_bin} #{DEFAULT_BIN_DIR}")

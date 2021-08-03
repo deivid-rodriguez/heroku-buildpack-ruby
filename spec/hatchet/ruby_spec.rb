@@ -38,6 +38,7 @@ describe "Ruby apps" do
         end
         app.deploy do
           expect(app.output).to match("bundler loaded in rake context")
+          puts app.output
           expect(app.run("rake assets:precompile")).to match("bundler loaded in rake context")
         end
       end
