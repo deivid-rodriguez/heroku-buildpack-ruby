@@ -103,9 +103,9 @@ WARNING
         bundle_default_without: "development:test"
       )
       allow_git do
+        install_bundler_in_app(slug_vendor_base)
         load_bundler_cache
         build_bundler
-        install_bundler_in_app(slug_vendor_base)
         post_bundler
         create_database_yml
         install_binaries
@@ -642,14 +642,18 @@ EOF
   # installs vendored gems into the slug
   def install_bundler_in_app(bundler_dir)
     instrument 'ruby.install_language_pack_gems' do
+      STDOUT.puts "bundler_dir: #{bundler_dir}"
+      STDOUT.puts "bundler.bundler_path: #{bundler.bundler_path}"
       FileUtils.mkdir_p(bundler_dir)
       Dir.chdir(bundler_dir) do |dir|
         `cp -R #{bundler.bundler_path}/. .`
       end
 
+      STDOUT.puts `tree #{bundler_dir}`
+      STDOUT.puts `tree #{bundler.bundler_path}`
       # # write bundler shim, so we can control the version bundler used
       # # Ruby 2.6.0 started vendoring bundler
-      # write_bundler_shim("vendor/bundle/bin") if ruby_version.vendored_bundler?
+       write_bundler_shim("vendor/bundle/bin") if ruby_version.vendored_bundler?
     end
   end
 
