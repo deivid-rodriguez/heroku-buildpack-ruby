@@ -103,9 +103,9 @@ WARNING
         bundle_default_without: "development:test"
       )
       allow_git do
-        install_bundler_in_app(slug_vendor_base)
         load_bundler_cache
         build_bundler
+        install_bundler_in_app(slug_vendor_base)
         post_bundler
         create_database_yml
         install_binaries
